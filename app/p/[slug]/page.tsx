@@ -42,7 +42,7 @@ export default function PublishedGiftPage({ params }: { params: Promise<{ slug: 
   return <PublicPage
     eventMedia={media(event.coverImageKey, "/padre-eustaquio-2026.jpg", event.name)}
     giftMedia={media(event.giftImageKey, "/presente-padre-eustaquio.png", event.giftTitle)}
-    instagramMedia={media(event.instagramImageKey, "/instagram-padre-eustaquio.jpg", "Arte para Instagram")}
+    instagramMedia={media(event.instagramImageKey, "/padre-eustaquio-sticker.png", "Figurinha para Instagram")}
     instagramText={event.instagramText || "Eu fui!"}
     sponsorMedia={event.sponsors.map(sponsor => sponsor.logoKey ? media(sponsor.logoKey, "", sponsor.name) : null)}
     sponsorNames={event.sponsors.map(sponsor => sponsor.name)}
