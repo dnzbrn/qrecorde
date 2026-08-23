@@ -16,7 +16,9 @@ npm run dev
 npm run build
 ```
 
-This starter does not use `wrangler.jsonc`.
+Production deployment uses the generated `dist/server/wrangler.json` through
+`npm run deploy`. The generated configuration binds the QRecorde Worker to its
+Cloudflare D1 database and R2 media bucket.
 
 ## Included Shape
 
