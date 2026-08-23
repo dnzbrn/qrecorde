@@ -8,11 +8,11 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 
 export async function generateMetadata(): Promise<Metadata> {
   const incoming = await headers();
-  const host = incoming.get("x-forwarded-host") || incoming.get("host") || "mimo-qr.com";
+  const host = incoming.get("x-forwarded-host") || incoming.get("host") || "qrecorde.com";
   const protocol = incoming.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
   const ogImage = `${protocol}://${host}/og.png`;
-  const title = "Mimo QR — Presentes digitais, memórias reais";
-  const description = "Crie experiências de presentes digitais para eventos, com QR Codes rastreáveis, patrocinadores e métricas em tempo real.";
+  const title = "QRecorde — Presentes digitais, memórias reais";
+  const description = "Entregue presentes digitais para o público do seu evento, com QR Codes rastreáveis, patrocinadores e métricas em tempo real.";
   return {
     title,
     description,
