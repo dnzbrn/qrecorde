@@ -79,8 +79,8 @@ export function PublicPage({ eventMedia, giftMedia, instagramMedia, instagramTex
     ctx.font=`800 ${fontSize}px Arial`; const lines:string[]=[]; let line="";
     for(const word of words){const candidate=line?`${line} ${word}`:word;if(ctx.measureText(candidate).width>maxWidth&&line){lines.push(line);line=word;}else line=candidate;}
     if(line)lines.push(line); if(lines.length>2){fontSize=36;ctx.font=`800 ${fontSize}px Arial`;lines.length=0;line="";for(const word of words){const candidate=line?`${line} ${word}`:word;if(ctx.measureText(candidate).width>maxWidth&&line&&lines.length<1){lines.push(line);line=word;}else line=candidate;}if(line)lines.push(line);}
-    const shown=lines.slice(0,2);const boxHeight=shown.length===1?190:235;const boxY=shown.length===1?1015:975;const phraseCenter=boxY+(shown.length===1?66:82);
-    ctx.save();ctx.shadowBlur=0;ctx.fillStyle=accentColor;ctx.beginPath();ctx.roundRect(80,boxY,920,boxHeight,56);ctx.fill();ctx.fillStyle="#fff";ctx.textAlign="center";ctx.textBaseline="middle";ctx.font=`800 ${fontSize}px Arial`;shown.forEach((item,index)=>ctx.fillText(item,540,phraseCenter+(index-(shown.length-1)/2)*(fontSize+10),maxWidth));ctx.globalAlpha=.35;ctx.fillRect(160,boxY+boxHeight-65,760,1);ctx.globalAlpha=1;ctx.font="700 24px Arial";ctx.fillText(subtitle.trim().toUpperCase().slice(0,90),540,boxY+boxHeight-32,780);ctx.restore();
+    const shown=lines.slice(0,2);const boxHeight=shown.length===1?128:185;const boxY=shown.length===1?985:945;const phraseCenter=boxY+boxHeight/2;
+    ctx.save();ctx.shadowBlur=0;ctx.fillStyle=accentColor;ctx.beginPath();ctx.roundRect(80,boxY,920,boxHeight,boxHeight/2);ctx.fill();ctx.fillStyle="#fff";ctx.textAlign="center";ctx.textBaseline="middle";ctx.font=`800 ${fontSize}px Arial`;shown.forEach((item,index)=>ctx.fillText(item,540,phraseCenter+(index-(shown.length-1)/2)*(fontSize+10),maxWidth));const title=subtitle.trim().slice(0,100);ctx.font="italic 700 34px Georgia";ctx.lineWidth=7;ctx.lineJoin="round";ctx.strokeStyle="#261a2ccc";ctx.fillStyle="#fff";ctx.shadowColor="#0008";ctx.shadowBlur=12;ctx.strokeText(title,540,boxY+boxHeight+58,840);ctx.fillText(title,540,boxY+boxHeight+58,840);ctx.restore();
   };
   const createSouvenir = async (transparent: boolean) => {
     await document.fonts.ready;
@@ -106,9 +106,7 @@ export function PublicPage({ eventMedia, giftMedia, instagramMedia, instagramTex
   };
   const downloadSouvenir = async () => { const blob = await createSouvenir(false); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "meu-presente-digital.png"; a.click(); URL.revokeObjectURL(url); track("download"); setShareNote("Seu presente foi salvo."); };
   const shareStory = async () => {
-    const blob = await createSouvenir(true); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "figurinha-meu-presente-stories.png"; a.click(); window.setTimeout(()=>URL.revokeObjectURL(url),1000); let copied=false;
-    try { if(navigator.clipboard&&"ClipboardItem" in window){await navigator.clipboard.write([new ClipboardItem({"image/png":blob})]);copied=true;} } catch { copied=false; }
-    track("story");setShareNote(copied?"Figurinha copiada e baixada! Abra seu Story, escolha uma foto e toque em colar.":"Figurinha baixada. Seu navegador bloqueou a cópia automática; adicione o PNG ao Story pela galeria.");
+    const blob = await createSouvenir(true); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "figurinha-meu-presente-stories.png"; a.click(); window.setTimeout(()=>URL.revokeObjectURL(url),1000);track("story");setShareNote("Figurinha baixada! Abra o Instagram, escolha uma foto de fundo e adicione este PNG pela galeria ou pelo adesivo de foto.");
   };
   return (
     <div className="public-shell" style={{"--violet":accentColor} as React.CSSProperties}>
@@ -162,8 +160,8 @@ export function PublicPage({ eventMedia, giftMedia, instagramMedia, instagramTex
           <h2>{giftTitle}</h2>
           <div className="gift-media-frame"><Media asset={giftMedia} className="gift-media"/><span className="gift-seal">✦</span></div>
           <p>{giftMessage}</p>
-          <div className="gift-actions"><button className="gift-primary" onClick={downloadSouvenir}>Baixar meu presente ↓</button><button onClick={shareStory}>Usar no meu Story ↗</button></div>
-          <div className="story-guide"><article><span>1</span><p><b>Baixe e copie a figurinha</b><small>Toque em “Usar no meu Story”. O arquivo será baixado e, quando permitido, copiado automaticamente.</small></p></article><article><span>2</span><p><b>Escolha uma foto de fundo</b><small>Abra o Instagram, crie um Story e selecione uma foto sua para usar como fundo.</small></p></article><article><span>3</span><p><b>Cole por cima da foto</b><small>Cole a figurinha transparente sobre a foto de fundo, ajuste o tamanho e publique.</small></p></article></div>
+          <div className="gift-actions"><button className="gift-primary" onClick={downloadSouvenir}>Baixar meu presente ↓</button><button onClick={shareStory}>Baixar figurinha do Story ↓</button></div>
+          <div className="story-guide"><article><span>1</span><p><b>Baixe a figurinha</b><small>Toque em “Baixar figurinha do Story” e salve o arquivo PNG no celular.</small></p></article><article><span>2</span><p><b>Escolha uma foto de fundo</b><small>Abra o Instagram, crie um Story e selecione uma foto sua para usar como fundo.</small></p></article><article><span>3</span><p><b>Adicione por cima da foto</b><small>No Instagram, use o adesivo de foto para selecionar o PNG baixado. Ajuste o tamanho e publique.</small></p></article></div>
           {shareNote && <div className="share-note">✓ {shareNote}</div>}
           <div className="gift-by">Mensagem e identidade personalizadas especialmente para esta celebração.</div>
         </div>
