@@ -12,6 +12,7 @@ type PublicEvent = {
   ctaText: string;
   giftTitle: string;
   giftMessage: string;
+  accentColor: string;
   coverImageKey?: string | null;
   giftImageKey?: string | null;
   sponsors: Array<{ name: string; logoKey?: string | null }>;
@@ -47,6 +48,7 @@ export default function PublishedGiftPage({ params }: { params: Promise<{ slug: 
     pageTitle={event.pageTitle}
     pageMessage={event.pageMessage}
     ctaText={event.ctaText}
+    accentColor={event.accentColor}
     trackingSlug={event.slug}
   />;
 }
