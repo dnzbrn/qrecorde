@@ -28,3 +28,7 @@ export const qrCodes = sqliteTable("qr_codes", {
 export const analyticsDaily = sqliteTable("analytics_daily", {
   id: text("id").primaryKey(), eventId: text("event_id").notNull().references(() => events.id, { onDelete: "cascade" }), day: text("day").notNull(), source: text("source").notNull().default("direct"), views: integer("views").notNull().default(0), opens: integer("opens").notNull().default(0), downloads: integer("downloads").notNull().default(0), stories: integer("stories").notNull().default(0),
 }, t => [uniqueIndex("idx_analytics_event_day_source").on(t.eventId, t.day, t.source)]);
+
+export const activityEvents = sqliteTable("activity_events", {
+  id: text("id").primaryKey(), eventId: text("event_id").notNull().references(() => events.id, { onDelete: "cascade" }), action: text("action", { enum: ["view", "open", "download", "story"] }).notNull(), source: text("source").notNull().default("direct"), createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+}, t => [index("idx_activity_event_created").on(t.eventId, t.createdAt)]);
