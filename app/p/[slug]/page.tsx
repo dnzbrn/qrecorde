@@ -17,6 +17,7 @@ type PublicEvent = {
   giftImageKey?: string | null;
   instagramImageKey?: string | null;
   instagramText: string;
+  instagramLayout: "classic" | "editorial" | "celebration";
   sponsors: Array<{ name: string; logoKey?: string | null }>;
 };
 
@@ -44,6 +45,7 @@ export default function PublishedGiftPage({ params }: { params: Promise<{ slug: 
     giftMedia={media(event.giftImageKey, "/presente-padre-eustaquio.png", event.giftTitle)}
     instagramMedia={media(event.instagramImageKey, "/padre-eustaquio-sticker.png", "Figurinha para Instagram")}
     instagramText={event.instagramText || "Eu fui!"}
+    instagramLayout={event.instagramLayout || "editorial"}
     sponsorMedia={event.sponsors.map(sponsor => sponsor.logoKey ? media(sponsor.logoKey, "", sponsor.name) : null)}
     sponsorNames={event.sponsors.map(sponsor => sponsor.name)}
     giftTitle={event.giftTitle}
