@@ -1,46 +1,24 @@
-"use client";
-
-import { use, useEffect, useState } from "react";
+import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { PublicPage } from "../../page";
+import { getPublicEvent } from "../../../lib/public-event";
+import { eventMetadata, socialOrigin } from "../../../lib/social-metadata";
 
-type PublicEvent = {
-  slug: string;
-  name: string;
-  eyebrow: string;
-  pageTitle: string;
-  pageMessage: string;
-  ctaText: string;
-  giftTitle: string;
-  giftMessage: string;
-  accentColor: string;
-  coverImageKey?: string | null;
-  giftImageKey?: string | null;
-  instagramImageKey?: string | null;
-  instagramText: string;
-  instagramLayout: "classic" | "editorial" | "celebration";
-  sponsors: Array<{ name: string; tier: string; logoKey?: string | null }>;
-};
-
-export default function PublishedGiftPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = use(params);
-  const [event, setEvent] = useState<PublicEvent | null>(null);
-  const [missing, setMissing] = useState(false);
-
-  useEffect(() => {
-    fetch(`/api/public/${slug}`)
-      .then(async response => {
-        if (!response.ok) throw new Error("not-found");
-        return response.json();
-      })
-      .then(setEvent)
-      .catch(() => setMissing(true));
-  }, [slug]);
-
-  if (missing) return <main className="published-state"><span className="brand-gem">◆</span><h1>Este presente ainda não está disponível.</h1><p>Confira o endereço ou fale com a organização do evento.</p></main>;
-  if (!event) return <main className="published-state"><span className="brand-gem">◆</span><p>Preparando seu presente...</p></main>;
+export const dynamic = "force-dynamic";
+type Props = { params: Promise<{ slug: string }> };
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const incoming = await headers();
+  return eventMetadata(await getPublicEvent(slug), socialOrigin(incoming.get("host")));
+}
+export default async function PublishedGiftPage({ params }: Props) {
+  const { slug } = await params;
+  const event = await getPublicEvent(slug);
+  if (!event) return <main className="published-state"><span className="brand-gem">◆</span><h1>Este presente ainda não está disponível.</h1><p>Confira o endereço ou fale com a organização do evento.</p></main>;
 
   const media = (key: string | null | undefined, fallback: string, name: string) => ({ src: key ? `/media/${key}` : fallback, type: "image" as const, name });
   return <PublicPage
+    eventName={event.name}
     eventMedia={media(event.coverImageKey, "/padre-eustaquio-2026.jpg", event.name)}
     giftMedia={media(event.giftImageKey, "/presente-padre-eustaquio.png", event.giftTitle)}
     instagramMedia={media(event.instagramImageKey, "/padre-eustaquio-sticker.png", "Figurinha para Instagram")}

@@ -57,7 +57,7 @@ function QrCard({ compact = false, url }: { compact?: boolean; url: string }) {
 
 type InstagramLayout = "classic" | "editorial" | "celebration";
 
-export function PublicPage({ eventMedia, giftMedia, instagramMedia, instagramText, instagramLayout = "editorial", sponsorMedia, sponsorNames = ["Vallourec", "Unimed BH", "Supermercados BH"], sponsorTiers = ["master", "gold", "silver"], giftTitle, giftMessage, pageEyebrow, pageTitle, pageMessage, ctaText, trackingSlug, accentColor = "#6b29d9" }: { eventMedia: MediaAsset; giftMedia: MediaAsset; instagramMedia:MediaAsset; instagramText:string; instagramLayout?:InstagramLayout; sponsorMedia: (MediaAsset | null)[]; sponsorNames?: string[]; sponsorTiers?: string[]; giftTitle: string; giftMessage: string; pageEyebrow: string; pageTitle: string; pageMessage: string; ctaText: string; trackingSlug?: string; accentColor?:string }) {
+export function PublicPage({ eventName, eventMedia, giftMedia, instagramMedia, instagramText, instagramLayout = "editorial", sponsorMedia, sponsorNames = ["Vallourec", "Unimed BH", "Supermercados BH"], sponsorTiers = ["master", "gold", "silver"], giftTitle, giftMessage, pageEyebrow, pageTitle, pageMessage, ctaText, trackingSlug, accentColor = "#6b29d9" }: { eventName?: string; eventMedia: MediaAsset; giftMedia: MediaAsset; instagramMedia:MediaAsset; instagramText:string; instagramLayout?:InstagramLayout; sponsorMedia: (MediaAsset | null)[]; sponsorNames?: string[]; sponsorTiers?: string[]; giftTitle: string; giftMessage: string; pageEyebrow: string; pageTitle: string; pageMessage: string; ctaText: string; trackingSlug?: string; accentColor?:string }) {
   const [giftOpen, setGiftOpen] = useState(false);
   const [shareNote, setShareNote] = useState("");
   const normalizeTier = (tier:string):"master"|"gold"|"silver" => tier === "master" ? "master" : tier === "silver" || tier === "supporter" ? "silver" : "gold";
@@ -182,7 +182,7 @@ export function PublicPage({ eventMedia, giftMedia, instagramMedia, instagramTex
           <article><b>03</b><span><strong>Leve a festa com você</strong> Uma memória para rever e compartilhar com quem você ama.</span></article>
         </div>
       </section>
-      <section className="sponsor-strip"><span>Realização</span><b>Santuário<br/>Padre Eustáquio</b><i /><span>Tecnologia</span><b>QRecorde</b></section>
+      <section className="sponsor-strip"><span>Realização</span><b>{eventName || pageTitle}</b><i /><span>Tecnologia</span><b>QRecorde</b></section>
       <footer className="public-footer"><div className="public-brand"><span className="brand-gem">◆</span><span>QR</span><b>ecorde</b></div><p>Presentes digitais. Memórias reais.</p><span>© 2026</span></footer>
       {giftOpen && <div className="gift-overlay" role="dialog" aria-modal="true" aria-label="Seu presente digital">
         <div className="gift-modal">

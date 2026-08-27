@@ -7,7 +7,7 @@ import ts from 'typescript';
 const transpile = source => ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText;
 const source = await readFile(new URL('../lib/analytics.ts', import.meta.url), 'utf8');
 const analytics = await import(`data:text/javascript;base64,${Buffer.from(transpile(source)).toString('base64')}`);
-const { analyticsDay, dayStart, reportRange, analyticsCSV, localDaySQL, localHourSQL, metricSQL } = analytics;
+const { analyticsDay, dayStart, reportRange, rawActivityCSV, rawCSVHeader, rawActivitySQL, localDaySQL, localHourSQL, metricSQL } = analytics;
 
 test('Brasília date boundary and inclusive report end', () => {
   assert.equal(analyticsDay(Date.parse('2026-08-28T02:59:59Z')), '2026-08-27');
@@ -32,24 +32,27 @@ test('SQL counts every action separately and excludes other events and end bound
   } finally { db.close(); }
 });
 
-test('CSV has UTF-8 BOM, escaped cells, explicit types and neutralized formulas', () => {
-  const csv = analyticsCSV('=HYPERLINK("bad")', [{day:'2026-08-27',hour:'23',source:' @formula;"x"',views:2,opens:1,downloads:3,stories:4}]);
+test('raw CSV retains duplicate actions, exact timestamps and safe quoted values', () => {
+  const time = Date.parse('2026-08-28T02:30:45.123Z');
+  const rows = ['view','view','open','download','story'].map((action,index)=>({id:`row-${index}`,action,source:' @formula;"x"',createdAt:time}));
+  const csv = rawCSVHeader + rawActivityCSV({id:'event-1',name:'=HYPERLINK("bad")',slug:'festa'},rows);
   assert.ok(csv.startsWith('\uFEFF'));
-  assert.match(csv, /Downloads da imagem do presente/);
-  assert.match(csv, /Downloads da figurinha do Story/);
+  assert.equal(csv.split('\r\n').length,7);
   assert.ok(csv.includes('"\'=HYPERLINK(""bad"")"'));
   assert.ok(csv.includes('"\' @formula;""x"""'));
-  assert.match(csv, /"2";"1";"3";"4"\r\n$/);
-  assert.equal(analyticsCSV('Empty', []).split('\r\n').length, 2);
+  assert.match(csv, /"2026-08-27";"23:30:45.123";"2026-08-28T02:30:45.123Z"/);
+  assert.match(csv, /"download";"Download da imagem";"Imagem"/);
+  assert.match(csv, /"story";"Download da figurinha";"Story"/);
+  assert.equal(rawActivityCSV({id:'1',name:'Empty',slug:'empty'},[]),'');
 });
 
 const routeSource = await readFile(new URL('../app/api/events/[id]/analytics/export/route.ts', import.meta.url), 'utf8');
 const routeBody = transpile(routeSource.replace(/^import .*;\n/gm, '')).replaceAll('export ', '');
-function route({ authenticated = true, owned = true } = {}) {
-  let queries = 0;
+function route({ authenticated = true, owned = true, batches = [[]] } = {}) {
+  let queries = 0; let batchIndex = 0;
   const runtimeEnv = { DB: { prepare(sql) { queries++; return { bind(...args) {
     if (sql.includes('owner_id')) assert.deepEqual(args, ['event-1','owner-1']);
-    return { first: async () => owned ? {name:'My event'} : null, all: async () => ({results:[]}) };
+    return { first: async () => owned ? {id:'event-1',name:'My event',slug:'my-event'} : null, all: async () => ({results:batches[batchIndex++] || []}) };
   } }; } } };
   const bindings = { ...analytics, runtimeEnv, json:(data,status=200)=>Response.json(data,{status}), requireSession:async()=>{if(!authenticated)throw new Response('Unauthorized',{status:401});return {user:{id:'owner-1'}};} };
   return { get: new Function(...Object.keys(bindings), routeBody+';return GET;')(...Object.values(bindings)), queries:()=>queries };
@@ -71,8 +74,8 @@ test('export rejects invalid range and returns a private CSV for valid empty per
   const response = await valid.get(new Request('https://test/export?from=2026-08-27&to=2026-08-27'),params);
   assert.equal(response.status,200);
   assert.equal(response.headers.get('cache-control'),'private, no-store');
-  assert.match(response.headers.get('content-disposition'), /analytics-2026-08-27-2026-08-27.csv/);
-  assert.match(await response.text(), /Aberturas do presente/);
+  assert.match(response.headers.get('content-disposition'), /analytics-raw-2026-08-27-2026-08-27.csv/);
+  assert.match(await response.text(), /Ação registrada/);
 });
 
 test('chart buttons select the day and expose its exact totals and 24 hours', async () => {
@@ -98,4 +101,38 @@ test('chart buttons select the day and expose its exact totals and 24 hours', as
   assert.equal(after.find(node=>node.type==='button' && node.props['aria-pressed']).props['aria-label'],yesterday.props['aria-label']);
   assert.deepEqual(after.filter(node=>node.type==='dd').map(node=>node.props.children),['17','4','3','2']);
   assert.equal(after.filter(node=>node.type==='tbody')[0].props.children.length,24);
+});
+
+
+test('raw SQL preserves same-time records and paginates without crossing events or dates', () => {
+  const db = new DatabaseSync(':memory:');
+  try {
+    db.exec('CREATE TABLE activity_events(id TEXT,event_id TEXT,action TEXT,source TEXT,created_at INTEGER); CREATE INDEX idx_activity_event_created ON activity_events(event_id,created_at)');
+    const insert = db.prepare('INSERT INTO activity_events VALUES (?,?,?,?,?)');
+    const {start,end} = reportRange('2026-08-27','2026-08-27');
+    for(let index=0;index<1001;index++) insert.run(`row-${String(index).padStart(4,'0')}`,'event-1','view','qr_cartaz',start);
+    insert.run('other','event-2','view','direct',start);
+    insert.run('tomorrow','event-1','story','direct',end);
+    const query=db.prepare(rawActivitySQL);
+    const first=query.all('event-1',start,end,start-1,start-1,'');
+    assert.equal(first.length,1000);
+    const last=first.at(-1);
+    const second=query.all('event-1',start,end,last.createdAt,last.createdAt,last.id);
+    assert.equal(second.length,1);
+    assert.equal(second[0].id,'row-1000');
+    assert.equal(new Set([...first,...second].map(row=>row.id)).size,1001);
+  } finally {db.close();}
+});
+test('export streams all raw batches without totals or losing repeated actions', async () => {
+  const time=Date.parse('2026-08-27T15:00:00.001Z');
+  const rows=Array.from({length:1001},(_,index)=>({id:`row-${index}`,createdAt:time,source:'qr_cartaz',action:'view'}));
+  const exporter=route({batches:[rows.slice(0,1000),rows.slice(1000)]});
+  const response=await exporter.get(new Request('https://test/export?from=2026-08-27&to=2026-08-27'),params);
+  assert.equal(response.status,200);
+  const csv=await response.text();
+  assert.equal(csv.split('\r\n').length,1003);
+  assert.equal((csv.match(/"view"/g)||[]).length,1001);
+  assert.match(csv,/"row-1000"/);
+  assert.doesNotMatch(csv,/TOTAL|Participação|Mais consumido/);
+  assert.equal(exporter.queries(),3);
 });

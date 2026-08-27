@@ -31,12 +31,12 @@ export function AnalyticsPanel({ eventId, daily, hourly, today, loaded }: { even
       const url = URL.createObjectURL(await response.blob());
       const link = document.createElement('a');
       link.href = url;
-      link.download = `analytics-${from}-${to}.csv`;
+      link.download = `analytics-raw-${from}-${to}.csv`;
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-      setNote('Relatório exportado. Períodos sem interações não geram linhas no CSV.');
+      setNote('Dados brutos exportados: uma linha por interação, sem agrupamento.');
     } catch (error) { setNote(error instanceof Error ? error.message : 'Não foi possível exportar.'); }
     finally { setExporting(false); }
   };
@@ -52,7 +52,7 @@ export function AnalyticsPanel({ eventId, daily, hourly, today, loaded }: { even
       <div className="analytics-day" aria-live="polite"><h3>{formatDay(current.day)}</h3><dl>{[['Acessos', current.views], ['Presente aberto', current.opens], ['Imagem baixada', current.downloads], ['Story baixado', current.stories]].map(([label,value]) => <div key={label}><dt>{label}</dt><dd>{number(Number(value))}</dd></div>)}</dl></div>
       <details className="analytics-hours"><summary>Ver os números por horário de {formatDay(current.day)}</summary><div className="analytics-table-scroll"><table><caption>Interações por hora · Brasília</caption><thead><tr><th scope="col">Hora</th><th scope="col">Acessos</th><th scope="col">Aberturas</th><th scope="col">Imagem</th><th scope="col">Story</th></tr></thead><tbody>{hours.map(item => <tr key={item.hour}><th scope="row">{item.hour}:00</th><td>{number(item.views)}</td><td>{number(item.opens)}</td><td>{number(item.downloads)}</td><td>{number(item.stories)}</td></tr>)}</tbody></table></div></details>
     </>}
-    <div className="analytics-export"><h3>Exportar relatório</h3><p>CSV para Excel ou Google Sheets, por dia, hora, origem e tipo de interação. Até 366 dias por exportação.</p><div className="analytics-filters"><label>De<input type="date" value={from} onChange={event => setFrom(event.target.value)} /></label><label>Até<input type="date" value={to} onChange={event => setTo(event.target.value)} /></label><button className="primary-btn" type="button" disabled={exporting || !eventId} onClick={exportReport}>{exporting ? 'Exportando…' : 'Exportar CSV ↓'}</button></div><p role="status">{note}</p></div>
+    <div className="analytics-export"><h3>Exportar relatório</h3><p>Dados brutos: uma linha por acesso, abertura, download da imagem ou do Story, com dia, horário completo e origem registrada. Até 366 dias por exportação.</p><div className="analytics-filters"><label>De<input type="date" value={from} onChange={event => setFrom(event.target.value)} /></label><label>Até<input type="date" value={to} onChange={event => setTo(event.target.value)} /></label><button className="primary-btn" type="button" disabled={exporting || !eventId} onClick={exportReport}>{exporting ? 'Exportando…' : 'Exportar dados brutos CSV ↓'}</button></div><p role="status">{note}</p></div>
     <p className="analytics-hint">Contamos interações, não visitantes únicos. “Abertura” é a janela do presente; imagem e Story são downloads. O relatório usa os registros detalhados disponíveis.</p>
   </section>;
 }

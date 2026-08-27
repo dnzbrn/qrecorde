@@ -1,3 +1,8 @@
-import { json, runtimeEnv } from "../../../../lib/server";
-export const dynamic="force-dynamic";
-export async function GET(_:Request,{params}:{params:Promise<{slug:string}>}){const{slug}=await params;const event=await runtimeEnv.DB.prepare("SELECT id,slug,name,eyebrow,page_title as pageTitle,page_message as pageMessage,cta_text as ctaText,gift_title as giftTitle,gift_message as giftMessage,accent_color as accentColor,cover_image_key as coverImageKey,gift_image_key as giftImageKey,instagram_image_key as instagramImageKey,instagram_text as instagramText,instagram_layout as instagramLayout FROM events WHERE slug=? AND status='published'").bind(slug).first<Record<string,unknown>>();if(!event)return json({error:"Presente não encontrado."},404);const sponsors=await runtimeEnv.DB.prepare("SELECT name,tier,tagline,logo_key as logoKey,position FROM sponsors WHERE event_id=? ORDER BY CASE tier WHEN 'master' THEN 0 WHEN 'gold' THEN 1 WHEN 'sponsor' THEN 1 ELSE 2 END,position").bind(event.id).all();return json({...event,sponsors:sponsors.results});}
+import { json } from "../../../../lib/server";
+import { getPublicEvent } from "../../../../lib/public-event";
+export const dynamic = "force-dynamic";
+export async function GET(_: Request, { params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const event = await getPublicEvent(slug);
+  return event ? json(event) : json({ error: "Presente não encontrado." }, 404);
+}
