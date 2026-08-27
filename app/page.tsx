@@ -71,7 +71,6 @@ export function PublicPage({ eventMedia, giftMedia, instagramMedia, instagramTex
   const [shareNote, setShareNote] = useState("");
   const normalizeTier = (tier:string):"master"|"gold"|"silver" => tier === "master" ? "master" : tier === "silver" || tier === "supporter" ? "silver" : "gold";
   const sponsorItems = sponsorNames.map((name, index) => ({ name, media:sponsorMedia[index], tier:normalizeTier(sponsorTiers[index] || "gold") }));
-  const featuredSponsors = sponsorItems.slice().sort((a,b)=>({master:0,gold:1,silver:2}[a.tier]-{master:0,gold:1,silver:2}[b.tier])).slice(0,6);
   const masterSponsors = sponsorItems.filter(item=>item.tier==="master");
   const tierMeta = {master:{label:"Master",copy:"Parceiros principais"},gold:{label:"Ouro",copy:"Patrocinadores ouro"},silver:{label:"Prata",copy:"Patrocinadores prata"}} as const;
   const track = (action: "view" | "open" | "download" | "story") => { if (trackingSlug) fetch(`/api/public/${trackingSlug}/track`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action, source: new URLSearchParams(window.location.search).get("utm_source") || "direct" }) }).catch(() => undefined); };
@@ -96,10 +95,11 @@ export function PublicPage({ eventMedia, giftMedia, instagramMedia, instagramTex
   const createSouvenir = async (transparent: boolean) => {
     await document.fonts.ready;
     const canvas = document.createElement("canvas");
-    canvas.width = 1080; canvas.height = 1080;
+    const masterRows = transparent ? 0 : Math.ceil(masterSponsors.length / 3);
+    canvas.width = 1080; canvas.height = masterRows ? 1080 + masterRows * 220 : 1080;
     const ctx = canvas.getContext("2d")!;
     if (!transparent) {
-      const gradient = ctx.createLinearGradient(0, 0, 1080, 1080); gradient.addColorStop(0, "#321a45"); gradient.addColorStop(.55, "#771f38"); gradient.addColorStop(1, "#ad7130"); ctx.fillStyle = gradient; ctx.fillRect(0, 0, 1080, 1080);
+      const gradient = ctx.createLinearGradient(0, 0, 1080, canvas.height); gradient.addColorStop(0, "#321a45"); gradient.addColorStop(.55, "#771f38"); gradient.addColorStop(1, "#ad7130"); ctx.fillStyle = gradient; ctx.fillRect(0, 0, 1080, canvas.height);
       const photo = await loadCanvasImage(giftMedia.src);
       ctx.save(); ctx.beginPath(); ctx.arc(540, 350, 275, 0, Math.PI * 2); ctx.clip(); ctx.drawImage(photo, 265, 75, 550, 550); ctx.restore();
       ctx.strokeStyle = "#e2bc66"; ctx.lineWidth = 8; ctx.beginPath(); ctx.arc(540, 350, 287, 0, Math.PI * 2); ctx.stroke();
@@ -109,7 +109,46 @@ export function PublicPage({ eventMedia, giftMedia, instagramMedia, instagramTex
     ctx.textAlign = "center"; ctx.fillStyle = "#fff8eb"; ctx.shadowColor = "#26132988"; ctx.shadowBlur = 0;
     if (!transparent) { ctx.font = "700 38px Arial"; ctx.fillText(giftTitle.toUpperCase(), 540,745,940); }
     if (!transparent) { ctx.font = "600 24px Arial"; ctx.fillText(pageTitle.toUpperCase(), 540, 795, 940); }
-    if (!transparent) { ctx.fillStyle = "#fff8eb"; ctx.font = "italic 28px Georgia"; drawWrappedText(ctx, giftMessage, 540, 855, 820, 38, 3); ctx.strokeStyle = "#ffffff35"; ctx.beginPath(); ctx.moveTo(110, 995); ctx.lineTo(970, 995); ctx.stroke(); ctx.fillStyle = "#e9c873"; ctx.font = "700 17px Arial"; ctx.fillText("PATROCINADOR MASTER  •  VALLOUREC", 540, 1025); ctx.fillStyle = "#fff8eb"; ctx.font = "600 15px Arial"; ctx.fillText("UNIMED BH   •   SUPERMERCADOS BH", 540, 1055); }
+    if (!transparent) { ctx.fillStyle = "#fff8eb"; ctx.font = "italic 28px Georgia"; drawWrappedText(ctx, giftMessage, 540, 855, 820, 38, 3); }
+    if (!transparent && masterRows) {
+      // Use only this event's Master partners; a missing logo falls back to its name.
+      const logos = await Promise.all(masterSponsors.map(item => item.media
+        ? loadCanvasImage(item.media.src).catch(() => null)
+        : Promise.resolve(null)));
+      ctx.fillStyle = "#fff8eb";
+      ctx.fillRect(0, 980, canvas.width, canvas.height - 980);
+      ctx.fillStyle = "#bd9141";
+      ctx.fillRect(80, 980, 920, 4);
+      ctx.fillStyle = "#543529";
+      ctx.font = "700 18px Arial";
+      ctx.fillText("ESTE PRESENTE É OFERECIDO POR", 540, 1026);
+      ctx.font = "700 26px Arial";
+      ctx.fillText(masterSponsors.length === 1 ? "PATROCINADOR MASTER" : "PATROCINADORES MASTER", 540, 1065);
+      for (let index = 0; index < masterSponsors.length; index++) {
+        const row = Math.floor(index / 3);
+        const count = Math.min(3, masterSponsors.length - row * 3);
+        const cardWidth = count === 1 ? 600 : count === 2 ? 430 : 286;
+        const gap = 24;
+        const x = (1080 - count * cardWidth - (count - 1) * gap) / 2 + (index % 3) * (cardWidth + gap);
+        const y = 1090 + row * 220;
+        ctx.fillStyle = "#ffffff";
+        ctx.strokeStyle = "#d8b76a";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(x, y, cardWidth, 180, 20);
+        ctx.fill();
+        ctx.stroke();
+        const logo = logos[index];
+        if (logo) {
+          const scale = Math.min((cardWidth - 48) / logo.width, 110 / logo.height);
+          const width = logo.width * scale, height = logo.height * scale;
+          ctx.drawImage(logo, x + (cardWidth - width) / 2, y + 18 + (110 - height) / 2, width, height);
+        }
+        ctx.fillStyle = "#3e2b24";
+        ctx.font = "700 22px Arial";
+        drawWrappedText(ctx, masterSponsors[index].name, x + cardWidth / 2, y + (logo ? 151 : 82), cardWidth - 40, 26, 2);
+      }
+    }
     return new Promise<Blob>((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error("Falha ao criar imagem")), "image/png"));
   };
   const downloadSouvenir = async () => { const blob = await createSouvenir(false); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "meu-presente-digital.png"; a.click(); URL.revokeObjectURL(url); track("download"); setShareNote("Seu presente foi salvo."); };
@@ -163,7 +202,6 @@ export function PublicPage({ eventMedia, giftMedia, instagramMedia, instagramTex
           <div className="gift-media-frame"><Media asset={giftMedia} className="gift-media"/><span className="gift-seal">✦</span></div>
           <p>{giftMessage}</p>
           <div className="gift-actions"><button className="gift-primary" onClick={downloadSouvenir}>Baixar meu presente ↓</button><button onClick={shareStory}>Baixar figurinha do Story ↓</button></div>
-          {featuredSponsors.length>0&&<div className="gift-sponsors"><small>ESTE PRESENTE É OFERECIDO POR</small><div>{featuredSponsors.map((item,i)=><span className={`gift-sponsor-${item.tier}`} key={`${item.name}-gift-${i}`}>{item.media?<Media asset={item.media} className="gift-sponsor-logo"/>:<b>{item.name}</b>}</span>)}</div></div>}
           <div className="story-guide"><article><span>1</span><p><b>Baixe a figurinha</b><small>Toque em “Baixar figurinha do Story” e salve o arquivo PNG no celular.</small></p></article><article><span>2</span><p><b>Escolha uma foto de fundo</b><small>Abra o Instagram, crie um Story e selecione uma foto sua para usar como fundo.</small></p></article><article><span>3</span><p><b>Adicione por cima da foto</b><small>No Instagram, use o adesivo de foto para selecionar o PNG baixado. Ajuste o tamanho e publique.</small></p></article></div>
           {shareNote && <div className="share-note">✓ {shareNote}</div>}
           <div className="gift-by">Mensagem e identidade personalizadas especialmente para esta celebração.</div>
