@@ -72,7 +72,7 @@ export function PublicPage({ eventMedia, giftMedia, instagramMedia, instagramTex
   const normalizeTier = (tier:string):"master"|"gold"|"silver" => tier === "master" ? "master" : tier === "silver" || tier === "supporter" ? "silver" : "gold";
   const sponsorItems = sponsorNames.map((name, index) => ({ name, media:sponsorMedia[index], tier:normalizeTier(sponsorTiers[index] || "gold") }));
   const featuredSponsors = sponsorItems.slice().sort((a,b)=>({master:0,gold:1,silver:2}[a.tier]-{master:0,gold:1,silver:2}[b.tier])).slice(0,6);
-  const masterSponsors = sponsorItems.filter(item=>item.tier==="master").slice(0,3);
+  const masterSponsors = sponsorItems.filter(item=>item.tier==="master");
   const tierMeta = {master:{label:"Master",copy:"Parceiros principais"},gold:{label:"Ouro",copy:"Patrocinadores ouro"},silver:{label:"Prata",copy:"Patrocinadores prata"}} as const;
   const track = (action: "view" | "open" | "download" | "story") => { if (trackingSlug) fetch(`/api/public/${trackingSlug}/track`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action, source: new URLSearchParams(window.location.search).get("utm_source") || "direct" }) }).catch(() => undefined); };
   useEffect(() => { track("view"); }, [trackingSlug]);
@@ -124,6 +124,7 @@ export function PublicPage({ eventMedia, giftMedia, instagramMedia, instagramTex
       </header>
       <main className="public-hero public-hero-rich">
         <div className="halo one" /><div className="halo two" />
+        {masterSponsors.length>0&&<aside className={`hero-master-bubbles sponsor-opening ${masterSponsors.length>3?"is-carousel":""}`} aria-label={`${masterSponsors.length} patrocinadores master`}><div className="master-bubble-label"><span>✦</span><small>ESTE PRESENTE É OFERECIDO POR</small><b>Marcas que acreditam neste momento</b><em>{masterSponsors.length} {masterSponsors.length===1?"patrocinador Master":"patrocinadores Master"}</em></div><div className="master-bubble-window"><div className="master-bubble-track">{[0,...(masterSponsors.length>3?[1]:[])].map(copy=><div className="master-bubble-sequence" aria-hidden={copy===1} key={`master-sequence-${copy}`}>{masterSponsors.map((item,i)=><div className="master-bubble" style={{"--bubble-index":i%3} as React.CSSProperties} key={`${item.name}-hero-master-${copy}-${i}`} title={item.name}>{item.media?<Media asset={item.media} className="master-bubble-logo"/>:<strong>{item.name}</strong>}<span>MASTER</span></div>)}</div>)}</div></div><button onClick={() => document.getElementById("apoiadores")?.scrollIntoView({ behavior: "smooth" })}>Ver todos os parceiros <span>↘</span></button></aside>}
         <div className="public-hero-grid">
           <div className="public-hero-copy">
             <div className="eyebrow">{pageEyebrow}</div>
@@ -133,15 +134,9 @@ export function PublicPage({ eventMedia, giftMedia, instagramMedia, instagramTex
               <button className="primary-btn" onClick={() => { setGiftOpen(true); track("open"); }}>{ctaText} <span>→</span></button>
               <span className="secure-note">● Presente gratuito e exclusivo do evento</span>
             </div>
-            {masterSponsors.length>0&&<aside className="hero-master-bubbles" aria-label="Patrocinadores master"><div className="master-bubble-label"><span>✦</span><small>APRESENTADO POR</small><b>Patrocinadores Master</b></div><div className="master-bubble-list">{masterSponsors.map((item,i)=><div className="master-bubble" style={{"--bubble-index":i} as React.CSSProperties} key={`${item.name}-hero-master`}>{item.media?<Media asset={item.media} className="master-bubble-logo"/>:<strong>{item.name}</strong>}<span>MASTER</span></div>)}</div></aside>}
             <div className="public-proof"><b>847</b> pessoas já receberam este presente <span>♡</span></div>
           </div>
           <div className="event-visual"><Media asset={eventMedia} className="event-media"/><span>Imagem oficial da celebração</span></div>
-        </div>
-        <div className="hero-sponsor-dock">
-          <div className="dock-intro"><small>ESTE PRESENTE É OFERECIDO POR</small><b>Marcas que tornam<br/>esta experiência possível</b></div>
-          <div className="dock-showcase">{(["master","gold","silver"] as const).map(tier=>{const group=sponsorItems.filter(item=>item.tier===tier).slice(0,tier==="master"?2:3);return group.length?<section className={`dock-tier dock-tier-${tier}`} key={`dock-${tier}`}><span>{tierMeta[tier].label}</span><div>{group.map((item,i)=><article key={`${item.name}-dock-${i}`}>{item.media?<Media asset={item.media} className="dock-logo"/>:<strong>{item.name}</strong>}</article>)}</div></section>:null})}</div>
-          <button onClick={() => document.getElementById("apoiadores")?.scrollIntoView({ behavior: "smooth" })}><span>Conheça todos</span> <b>↓</b></button>
         </div>
       </main>
       <section className="public-sponsors" id="apoiadores">
