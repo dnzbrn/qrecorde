@@ -18,7 +18,7 @@ type PublicEvent = {
   instagramImageKey?: string | null;
   instagramText: string;
   instagramLayout: "classic" | "editorial" | "celebration";
-  sponsors: Array<{ name: string; logoKey?: string | null }>;
+  sponsors: Array<{ name: string; tier: string; logoKey?: string | null }>;
 };
 
 export default function PublishedGiftPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -48,6 +48,7 @@ export default function PublishedGiftPage({ params }: { params: Promise<{ slug: 
     instagramLayout={event.instagramLayout || "editorial"}
     sponsorMedia={event.sponsors.map(sponsor => sponsor.logoKey ? media(sponsor.logoKey, "", sponsor.name) : null)}
     sponsorNames={event.sponsors.map(sponsor => sponsor.name)}
+    sponsorTiers={event.sponsors.map(sponsor => sponsor.tier)}
     giftTitle={event.giftTitle}
     giftMessage={event.giftMessage}
     pageEyebrow={event.eyebrow}

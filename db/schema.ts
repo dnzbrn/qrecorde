@@ -18,7 +18,7 @@ export const events = sqliteTable("events", {
 }, t => [uniqueIndex("idx_events_slug").on(t.slug), index("idx_events_owner_id").on(t.ownerId), index("idx_events_owner_status").on(t.ownerId, t.status)]);
 
 export const sponsors = sqliteTable("sponsors", {
-  id: text("id").primaryKey(), eventId: text("event_id").notNull().references(() => events.id, { onDelete: "cascade" }), name: text("name").notNull(), tier: text("tier", { enum: ["master", "sponsor", "supporter"] }).notNull().default("sponsor"), tagline: text("tagline").notNull().default(""), logoKey: text("logo_key"), position: integer("position").notNull().default(0), createdAt: integer("created_at", { mode: "timestamp" }).notNull(), updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+  id: text("id").primaryKey(), eventId: text("event_id").notNull().references(() => events.id, { onDelete: "cascade" }), name: text("name").notNull(), tier: text("tier", { enum: ["master", "gold", "silver"] }).notNull().default("gold"), tagline: text("tagline").notNull().default(""), logoKey: text("logo_key"), position: integer("position").notNull().default(0), createdAt: integer("created_at", { mode: "timestamp" }).notNull(), updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
 }, t => [index("idx_sponsors_event_position").on(t.eventId, t.position)]);
 
 export const qrCodes = sqliteTable("qr_codes", {

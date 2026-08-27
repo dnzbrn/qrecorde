@@ -11,7 +11,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const { id, sponsorId } = await params; const { sponsor } = await ownedSponsor(request, id, sponsorId);
     if (!sponsor) return json({ error: "Patrocinador não encontrado." }, 404);
     const body = await request.json() as { name?: string; tier?: string; tagline?: string };
-    const tier = ["master", "sponsor", "supporter"].includes(body.tier || "") ? body.tier : "sponsor";
+    const tier = ["master", "gold", "silver"].includes(body.tier || "") ? body.tier : "gold";
+    const aliases=tier==="gold"?["gold","sponsor"]:tier==="silver"?["silver","supporter"]:["master","master"];
+    const count = await runtimeEnv.DB.prepare("SELECT COUNT(*) as total FROM sponsors WHERE event_id=? AND tier IN (?,?) AND id<>?").bind(id, ...aliases, sponsorId).first<{total:number}>();
+    if ((count?.total || 0) >= 50) return json({ error: "Esta categoria já possui 50 patrocinadores." }, 400);
     await runtimeEnv.DB.prepare("UPDATE sponsors SET name=?,tier=?,tagline=?,updated_at=? WHERE id=?").bind(body.name?.trim() || "Patrocinador", tier, body.tagline?.trim() || "", Date.now(), sponsorId).run();
     return json({ ok: true });
   } catch (error) { return error instanceof Response ? error : json({ error: "Não foi possível salvar." }, 500); }
